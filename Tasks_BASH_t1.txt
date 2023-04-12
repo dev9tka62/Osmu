@@ -1,0 +1,33 @@
+#!/bin/bash
+# —крипт дл€ создани€ нового пользовател€ с указанием имени, парол€,
+# созданием дл€ него домашней папки, настройкой среды.
+echo "¬ведите им€: "
+read USER_NAME
+echo "¬ведите пароль: "
+read -s USER_PASSWORD
+echo "ѕодтвердите пароль: "
+read -s USER_PASSWORD2
+
+ if [ "$USER_PASSWORD" != "$USER_PASSWORD2" ]; then
+     echo "ѕароли не схожи!" && exit 1; # exit code 1 Ч failed.
+ fi
+
+ egrep "^$USER_NAME" /etc/passwd >/dev/null
+
+ if [ $? -eq 0 ]; then # user exists.
+
+    echo "User $USER_NAME already exists!" && exit 2; # exit code 2 Ч user exists.
+
+ else
+
+    PASS=$(perl -e 'print crypt($ARGV[0], "password")' $USER_PASSWORD)
+
+    sudo useradd -m -p $PASS $USER_NAME || { echo 'Error' ; exit 3; } # exit code 3 Ч error while creating user.
+
+    [ $? -eq 0 ] && echo "User has been added to system!" || { echo 'Error!' ;exit 4; } # exit code 4 Ч error while creating home directory.
+
+    sudo chown $USER_NAME:$USER_NAME /home/${USER_NAME} || { echo 'Error!' ;exit 5; } # exit code 5 Ч error while setting permissions.
+
+    sudo chsh -s /bin/bash $USER_NAME || { echo 'Error!' ;exit 6; } # exit code 6 Ч error while setting shell for the user.
+
+ fi
